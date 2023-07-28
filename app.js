@@ -1,15 +1,20 @@
-const express = require('express');
-const mysql = require('mysql2');
-const bodyParser = require('body-parser');
-const cors = require('cors');
+const express = require("express");
+const mysql = require("mysql2");
+const bodyParser = require("body-parser");
+const cors = require("cors");
+
+
+const sequelize = require("./database");
+
+const expensesController = require("./controller/expense");
 
 const app = express();
 
 const pool = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: '2112',
-  database: 'users',
+  host: "localhost",
+  user: "root",
+  password: "2112",
+  database: "users",
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -19,76 +24,27 @@ app.use(bodyParser.json());
 app.use(cors());
 
 //fetch all expenses
-app.get('/get-expense', (req, res) => {
-  const query = 'SELECT * FROM expenses';
-
-  pool.query(query, (err, results) => {
-    if (err) {
-      console.error('Error fetching expenses:', err);
-      return res.status(500).json({ error: 'Error fetching expenses.' });
-    }
-
-    res.json(results);
-  });
-});
+app.get("/get-expense", expensesController.getFetchExpenses);
 
 // add expense
-app.post('/add-expense', (req, res) => {
-  const { amount, description, cat } = req.body;
-
-  if (!amount || !description || !cat) {
-    return res.status(400).json({ error: 'amount, description, and cat are required fields!' });
-  }
-
-  const quer = 'INSERT INTO expenses (amount, description, cat) VALUES (?, ?, ?)';
-  const values = [amount, description, cat];
-
-  pool.query(quer, values, (err, result) => {
-    if (err) {
-      console.error('Error adding expenses:', err);
-      return res.status(500).json({ error: 'Error adding expenses.' });
-    }
-
-    res.json({ message: 'expenses added successfully!' });
-  });
-  // console.log(values)
-});
+app.post("/add-expense", expensesController.getAddExpenses);
 
 // update expense
-app.put('/expenses/:id', (req, res) => {
-  const id = req.params.id;
-  const { amount, description, cat } = req.body;
-
-  if (!amount || !description || !cat) {
-    return res.status(400).json({ error: 'amount, description, and cat are required fields!' });
-  }
-
-  const query = 'UPDATE expenses SET amount = ?, description = ?, cat = ? WHERE id = ?';
-  const values = [amount, description, cat, id];
-
-  pool.query(query, values, (err, result) => {
-    if (err) {
-      console.error('Error updating expenses:', err);
-      return res.status(500).json({ error: 'Error updating expenses.' });
-    }
-
-    res.json({ message: 'expenses updated successfully!' });
-  });
-});
+app.put("/expenses/:id", expensesController.getEditExpenses);
 
 // delete expense
-app.delete('/expenses/:id', (req, res) => {
-  const id = req.params.id;
-  const query = 'DELETE FROM expenses WHERE id = ?';
+app.delete("/expenses/:id", expensesController.getDeleteExpenses);
 
-  pool.query(query, id, (err, result) => {
-    if (err) {
-      console.error('Error deleting expenses:', err);
-      return res.status(500).json({ error: 'Error deleting expenses.' });
-    }
 
-    res.json({ message: 'expenses deleted successfully!' });
+sequelize
+  .sync()
+  .then((result) => {
+    console.log(result);
+    app.listen(3000);
+  })
+  .catch((err) => {
+    console.log(err);
   });
-});
 
-app.listen(3000);
+
+// app.listen(3000);
